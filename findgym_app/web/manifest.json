@@ -1,6 +1,6 @@
 {
-    "name": "findgym_app",
-    "short_name": "findgym_app",
+    "name": "aplikasi_gym_palembang",
+    "short_name": "aplikasi_gym_palembang",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
