@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "303735559012",
+    "firebase_url": "https://aplikasi-gym-palembang-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "aplikasi-gym-palembang",
+    "storage_bucket": "aplikasi-gym-palembang.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303735559012:android:bdedc882a2d573dbd3e071",
+        "android_client_info": {
+          "package_name": "com.example.findgym_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTRacsynO7qmfTHnLy5peuzk6puA-DimQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
