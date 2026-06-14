@@ -1,104 +1,111 @@
 import 'package:flutter/material.dart';
 import 'package:aplikasi_gym_palembang/screens/signin_Screens.dart';
 import 'package:aplikasi_gym_palembang/screens/SignUp_Screens.dart';
-import 'package:aplikasi_gym_palembang/screens/detail_screens.dart';
-import 'package:aplikasi_gym_palembang/screens/favorite_screens.dart';
 import 'package:aplikasi_gym_palembang/screens/home_screens.dart';
+import 'package:aplikasi_gym_palembang/screens/favorite_screens.dart';
 import 'package:aplikasi_gym_palembang/screens/profile_screens.dart';
 import 'package:aplikasi_gym_palembang/screens/search_screens.dart';
+import 'package:aplikasi_gym_palembang/screens/submission_gym_screens.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:aplikasi_gym_palembang/screens/admin_approval_screens.dart';
+import 'screens/admin_category_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Aplikasi Gym Palembang',
+
       initialRoute: '/',
+
       routes: {
         '/': (context) => const MainScreen(),
         '/signin': (context) => const SignInScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/submitgym': (context) => const SubmissionGymScreen(), 
+        '/adminapproval': (context) => const AdminApprovalScreen(),
+        '/admincategory': (context) => const AdminCategoryScreen(),
       },
-      debugShowCheckedModeBanner: false,
-      title: 'Aplikasi Gym',
+
       theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-          iconTheme: IconThemeData(color: Colors.blueGrey),
-          titleTextStyle: TextStyle(
-            color: Colors.blueGrey,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey).copyWith(
-          primary: Colors.blueGrey,
-          surface: Colors.blueGrey[50],
-        ),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blueGrey,
+        ),
       ),
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() =>
+      _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _children = [
-    const HomeScreen(),
-    const SearchScreen(),
-    const FavoriteScreen(),
-    const ProfileScreen(),
+  final List<Widget> _pages = const [
+    HomeScreen(),
+    SearchScreen(),
+    FavoriteScreen(),
+    ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _children[_currentIndex],
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          canvasColor: Colors.blueGrey[50],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (int index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          selectedItemColor: Colors.blueGrey,
-          unselectedItemColor: Colors.blueGrey[100],
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, color: Colors.grey),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search, color: Colors.grey),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite, color: Colors.grey),
-              label: 'Favorite',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, color: Colors.grey),
-              label: 'Profile',
-            ),
-          ],
-        ),
+      body: _pages[_currentIndex],
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+
+        type: BottomNavigationBarType.fixed,
+
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorite',
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }

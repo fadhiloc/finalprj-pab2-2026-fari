@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../Models/Gym.dart';
@@ -8,11 +9,13 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() =>
+      _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _searchController =
+  final TextEditingController
+      _searchController =
       TextEditingController();
 
   String searchQuery = '';
@@ -23,135 +26,261 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Gym gymFromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  Gym gymFromDocument(
+    DocumentSnapshot doc,
+  ) {
+    final data =
+        doc.data() as Map<String, dynamic>;
 
     return Gym(
       id: doc.id,
       name: data['name'] ?? '',
       location: data['location'] ?? '',
-      description: data['description'] ?? '',
-      latitude: (data['latitude'] ?? 0).toDouble(),
-      longitude: (data['longitude'] ?? 0).toDouble(),
-      type: data['type'] ?? '',
-      imageUrls:
-          List<String>.from(data['imageUrls'] ?? []),
-      rating: (data['rating'] ?? 0).toDouble(),
-      ratingCount: data['ratingCount'] ?? 0,
+      description:
+          data['description'] ?? '',
+      latitude:
+          (data['latitude'] ?? 0)
+              .toDouble(),
+      longitude:
+          (data['longitude'] ?? 0)
+              .toDouble(),
+
+      types:List<String>.from(
+        data['types'] ?? [],
+      ),
+
+      imageUrls: List<String>.from(
+        data['imageUrls'] ?? [],
+      ),
+      rating:
+          (data['rating'] ?? 0)
+              .toDouble(),
+
+      ratingCount:
+          data['ratingCount'] ?? 0,
+    );
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance
+        .signOut();
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/signin',
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final user =
+        FirebaseAuth.instance.currentUser;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor:
+          const Color(0xFFF5F6FA),
 
       appBar: AppBar(
         title: const Text(
           "Aplikasi Gym Palembang",
         ),
         centerTitle: true,
+
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                _logout();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                enabled: false,
+                child: Text(
+                  user?.email ?? 'Belum login',
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
 
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding:
+                const EdgeInsets.all(
+                  16,
+                ),
             child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "Cari gym...",
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
+              controller:
+                  _searchController,
+              decoration:
+                  InputDecoration(
+                hintText:
+                    "Cari gym...",
+                prefixIcon:
+                    const Icon(
+                      Icons.search,
+                    ),
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                        15,
+                      ),
                 ),
               ),
               onChanged: (value) {
                 setState(() {
                   searchQuery =
-                      value.toLowerCase().trim();
+                      value
+                          .toLowerCase()
+                          .trim();
                 });
               },
             ),
           ),
 
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('gyms')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                    ),
-                  );
-                }
+            child:
+                StreamBuilder<
+                  QuerySnapshot
+                >(
+                  stream:
+                      FirebaseFirestore
+                          .instance
+                          .collection(
+                            'gyms',
+                          )
+                          .where(
+                            'Status',
+                            isEqualTo: 'Approved',
+                          )
+                          .snapshots(),
 
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                    child:
-                        CircularProgressIndicator(),
-                  );
-                }
+                  builder: (
+                    context,
+                    snapshot,
+                  ) {
+                    if (snapshot
+                        .hasError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                        ),
+                      );
+                    }
 
-                final docs = snapshot.data!.docs;
+                    if (snapshot
+                            .connectionState ==
+                        ConnectionState
+                            .waiting) {
+                      return const Center(
+                        child:
+                            CircularProgressIndicator(),
+                      );
+                    }
 
-                final gyms = docs
-                    .map(gymFromDocument)
-                    .where((gym) {
-                  return gym.name
-                          .toLowerCase()
-                          .contains(searchQuery) ||
-                      gym.location
-                          .toLowerCase()
-                          .contains(searchQuery);
-                }).toList();
+                    final docs =
+                        snapshot
+                            .data!
+                            .docs;
 
-                if (gyms.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "Belum ada data gym",
-                    ),
-                  );
-                }
+                    final gyms =
+                        docs
+                            .map(
+                              gymFromDocument,
+                            )
+                            .where((
+                              gym,
+                            ) {
+                              return gym
+                                      .name
+                                      .toLowerCase()
+                                      .contains(
+                                        searchQuery,
+                                      ) ||
+                                  gym
+                                      .location
+                                      .toLowerCase()
+                                      .contains(
+                                        searchQuery,
+                                      );
+                            })
+                            .toList();
 
-                return GridView.builder(
-                  padding:
-                      const EdgeInsets.all(16),
-                  itemCount: gyms.length,
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemBuilder: (context, index) {
-                    return ItemCard(
-                      gym: gyms[index],
+                    if (gyms
+                        .isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "Belum ada data gym",
+                        ),
+                      );
+                    }
+
+                    return GridView.builder(
+                      padding:
+                          const EdgeInsets.all(
+                            16,
+                          ),
+                      itemCount:
+                          gyms.length,
+
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                2,
+                            crossAxisSpacing:
+                                12,
+                            mainAxisSpacing:
+                                12,
+                            childAspectRatio:
+                                0.75,
+                          ),
+
+                      itemBuilder: (
+                        context,
+                        index,
+                      ) {
+                        return ItemCard(
+                          gym:
+                              gyms[index],
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
           ),
         ],
       ),
 
       floatingActionButton:
           FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(
-            context,
-            '/addgym',
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/submitgym',
+              );
+            },
+            child: const Icon(
+              Icons.add,
+            ),
+          ),
     );
   }
 }
