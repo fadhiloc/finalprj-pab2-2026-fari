@@ -18,6 +18,10 @@ class FavoriteScreen extends StatelessWidget {
       description: data['description'] ?? '',
       latitude: (data['latitude'] ?? 0).toDouble(),
       longitude: (data['longitude'] ?? 0).toDouble(),
+      openTime: data['openTime'] ?? '',
+      closeTime: data['closeTime'] ?? '',
+      contact: data['contact'] ?? '',
+      instagram: data['instagram'] ?? '',
 
       types: List<String>.from(
         data['types'] ?? [],
