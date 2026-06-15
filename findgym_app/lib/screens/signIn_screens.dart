@@ -1,83 +1,86 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../services/auth_service.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({Key? key}) : super(key: key);
+  const SignInScreen({super.key});
 
   @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  State<SignInScreen> createState() =>
+      _SignInScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+class _SignInScreenState
+    extends State<SignInScreen> {
+  final AuthService _authService =
+      AuthService();
 
-  String _errorText = '';
+  final TextEditingController
+      _usernameController =
+      TextEditingController();
+
+  final TextEditingController
+      _passwordController =
+      TextEditingController();
+
   bool _obscurePassword = true;
 
-  Future<Map<String, String>?> _retrieveAndDecrypt() async {
-    final prefs = await SharedPreferences.getInstance();
+  bool _isLoading = false;
 
-    final encryptedUsername = prefs.getString('username') ?? '';
-    final encryptedPassword = prefs.getString('password') ?? '';
-    final keyString = prefs.getString('key') ?? '';
-    final ivString = prefs.getString('iv') ?? '';
-
-    if (encryptedUsername.isEmpty ||
-        encryptedPassword.isEmpty ||
-        keyString.isEmpty ||
-        ivString.isEmpty) {
-      return null;
-    }
-
-    try {
-      final key = encrypt.Key.fromBase64(keyString);
-      final iv = encrypt.IV.fromBase64(ivString);
-      final encrypter = encrypt.Encrypter(encrypt.AES(key));
-
-      final decryptedUsername =
-          encrypter.decrypt64(encryptedUsername, iv: iv);
-      final decryptedPassword =
-          encrypter.decrypt64(encryptedPassword, iv: iv);
-
-      return {'username': decryptedUsername, 'password': decryptedPassword};
-    } catch (e) {
-      return null;
-    }
-  }
+  String _errorText = '';
 
   Future<void> signIn() async {
-    final prefs = await SharedPreferences.getInstance();
+    final email =
+        _usernameController.text.trim();
 
-    final enteredUsername = _usernameController.text.trim();
-    final enteredPassword = _passwordController.text.trim();
+    final password =
+        _passwordController.text.trim();
 
-    final decryptedData = await _retrieveAndDecrypt();
-
-    if (decryptedData == null) {
+    if (email.isEmpty ||
+        password.isEmpty) {
       setState(() {
-        _errorText = 'Data akun tidak ditemukan/korup. Silakan Sign Up ulang.';
+        _errorText =
+            'Email dan password wajib diisi';
       });
       return;
     }
 
-    final savedUsername = decryptedData['username'] ?? '';
-    final savedPassword = decryptedData['password'] ?? '';
+    setState(() {
+      _isLoading = true;
+      _errorText = '';
+    });
 
-    if (enteredUsername == savedUsername && enteredPassword == savedPassword) {
-      await prefs.setBool('isSignedIn', true);
-
-      await prefs.setString('currentUser', savedUsername);
+    try {
+      await _authService.signIn(
+        email: email,
+        password: password,
+      );
 
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-    } else {
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/',
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
       setState(() {
-        _errorText = 'Nama pengguna atau kata sandi salah.';
+        _errorText =
+            e.message ??
+            'Login gagal';
+      });
+    } catch (e) {
+      setState(() {
+        _errorText =
+            'Terjadi kesalahan';
       });
     }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -90,66 +93,127 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In')),
+      appBar: AppBar(
+        title: const Text(
+          'Sign In',
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding:
+                const EdgeInsets.all(16),
             child: Column(
               children: [
                 TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: "Nama Pengguna",
-                    border: OutlineInputBorder(),
+                  controller:
+                      _usernameController,
+                  decoration:
+                      const InputDecoration(
+                    labelText: "Email",
+                    border:
+                        OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(
+                  height: 20,
+                ),
+
                 TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: "Kata Sandi",
-                    errorText: _errorText.isNotEmpty ? _errorText : null,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      }),
+                  controller:
+                      _passwordController,
+                  obscureText:
+                      _obscurePassword,
+                  decoration:
+                      InputDecoration(
+                    labelText:
+                        "Password",
+                    border:
+                        const OutlineInputBorder(),
+                    errorText:
+                        _errorText
+                                .isNotEmpty
+                            ? _errorText
+                            : null,
+                    suffixIcon:
+                        IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword =
+                              !_obscurePassword;
+                        });
+                      },
                       icon: Icon(
                         _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+                            ? Icons
+                                .visibility_off
+                            : Icons
+                                .visibility,
                       ),
                     ),
                   ),
-                  obscureText: _obscurePassword,
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: signIn,
-                  child: const Text('Sign In'),
+
+                const SizedBox(
+                  height: 20,
                 ),
-                const SizedBox(height: 10),
+
+                SizedBox(
+                  width:
+                      double.infinity,
+                  child:
+                      ElevatedButton(
+                    onPressed:
+                        _isLoading
+                            ? null
+                            : signIn,
+                    child: _isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text(
+                            'Sign In',
+                          ),
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 12,
+                ),
+
                 RichText(
                   text: TextSpan(
-                    text: 'Belum punya akun? ',
-                    style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
+                    text:
+                        'Belum punya akun? ',
+                    style:
+                        const TextStyle(
+                      color:
+                          Colors.black87,
+                      fontSize: 16,
+                    ),
                     children: [
                       TextSpan(
-                        text: 'Daftar di sini.',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          decoration: TextDecoration.underline,
-                          fontSize: 16,
+                        text:
+                            'Daftar di sini',
+                        style:
+                            const TextStyle(
+                          color:
+                              Colors.blue,
+                          decoration:
+                              TextDecoration
+                                  .underline,
                         ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.pushNamed(context, '/signup');
-                          },
+                        recognizer:
+                            TapGestureRecognizer()
+                              ..onTap = () {
+                                Navigator.pushNamed(
+                                  context,
+                                  '/signup',
+                                );
+                              },
                       ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),

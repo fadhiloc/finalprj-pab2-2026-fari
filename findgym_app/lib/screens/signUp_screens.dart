@@ -1,75 +1,115 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<SignUpScreen> createState() =>
+      _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _fullnameController = TextEditingController();
+class _SignUpScreenState
+    extends State<SignUpScreen> {
+  final AuthService _authService =
+      AuthService();
 
-  String _errorText = '';
+  final TextEditingController
+      _fullnameController =
+      TextEditingController();
+
+  final TextEditingController
+      _usernameController =
+      TextEditingController();
+
+  final TextEditingController
+      _passwordController =
+      TextEditingController();
+
   bool _obscurePassword = true;
 
-  bool _isValidPassword(String password) {
-    return password.length >= 8 &&
-        password.contains(RegExp(r'[A-Z]')) &&
-        password.contains(RegExp(r'[a-z]')) &&
-        password.contains(RegExp(r'[0-9]')) &&
-        password.contains(RegExp(r'[!@#$%^&*(),.?":{}<>]'));
+  String _errorText = '';
+
+  bool _isLoading = false;
+
+  bool _isValidPassword(
+    String password,
+  ) {
+    return password.length >= 6;
   }
 
   Future<void> _signUp() async {
-    final prefs = await SharedPreferences.getInstance();
+    final fullName =
+        _fullnameController.text.trim();
 
-    final name = _fullnameController.text.trim();
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
+    final email =
+        _usernameController.text.trim();
 
-    if (name.isEmpty || username.isEmpty || password.isEmpty) {
-      setState(() => _errorText = 'Semua field wajib diisi.');
+    final password =
+        _passwordController.text.trim();
+
+    if (fullName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty) {
+      setState(() {
+        _errorText =
+            'Semua field wajib diisi';
+      });
       return;
     }
 
     if (!_isValidPassword(password)) {
       setState(() {
         _errorText =
-            'Minimal 8 karakter, kombinasi [A-Z], [a-z], [0-9], [!@#\$%^&*(),.?":{}<>]';
+            'Password minimal 6 karakter';
       });
       return;
     }
 
-   
-    final encrypt.Key key = encrypt.Key.fromSecureRandom(32);
-    final encrypt.IV iv = encrypt.IV.fromSecureRandom(16);
+    setState(() {
+      _isLoading = true;
+      _errorText = '';
+    });
 
-    final encrypter = encrypt.Encrypter(encrypt.AES(key));
+    try {
+      await _authService.signUp(
+        fullName: fullName,
+        email: email,
+        password: password,
+      );
 
-    final encryptedName = encrypter.encrypt(name, iv: iv).base64;
-    final encryptedUsername = encrypter.encrypt(username, iv: iv).base64;
-    final encryptedPassword = encrypter.encrypt(password, iv: iv).base64;
+      if (!mounted) return;
 
-    
-    await prefs.setString('fullname', encryptedName);
-    await prefs.setString('username', encryptedUsername);
-    await prefs.setString('password', encryptedPassword);
-    await prefs.setString('key', key.base64);
-    await prefs.setString('iv', iv.base64);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Registrasi berhasil',
+          ),
+        ),
+      );
 
-    
-    await prefs.setBool('isSignedIn', false);
+      Navigator.pushReplacementNamed(
+        context,
+        '/signin',
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorText =
+            e.message ??
+            'Terjadi kesalahan';
+      });
+    } catch (e) {
+      setState(() {
+        _errorText = e.toString();
+      });
+    }
 
-   
-    await prefs.setBool('hasAccount', true);
-
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/signin');
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -83,55 +123,249 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
-      body: Center(
+      backgroundColor: const Color(0xFFF5F6FA),
+
+      body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _fullnameController,
-                  decoration: const InputDecoration(
-                    labelText: "Nama Lengkap",
-                    border: OutlineInputBorder(),
-                  ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 30),
+
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.blueGrey,
+                child: const Icon(
+                  Icons.fitness_center,
+                  color: Colors.white,
+                  size: 50,
                 ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: "Nama Pengguna",
-                    border: OutlineInputBorder(),
-                  ),
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Aplikasi Gym Palembang",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: "Kata Sandi",
-                    errorText: _errorText.isNotEmpty ? _errorText : null,
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      }),
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                "Buat akun baru",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(20),
+                ),
+
+                child: Padding(
+                  padding:
+                      const EdgeInsets.all(20),
+
+                  child: Column(
+                    children: [
+
+                      TextField(
+                        controller:
+                            _fullnameController,
+
+                        decoration:
+                            InputDecoration(
+                          labelText:
+                              "Nama Lengkap",
+
+                          prefixIcon:
+                              const Icon(
+                            Icons.person,
+                          ),
+
+                          border:
+                              OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    12),
+                          ),
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(
+                          height: 16),
+
+                      TextField(
+                        controller:
+                            _usernameController,
+
+                        decoration:
+                            InputDecoration(
+                          labelText:
+                              "Email",
+
+                          prefixIcon:
+                              const Icon(
+                            Icons.email,
+                          ),
+
+                          border:
+                              OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    12),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                          height: 16),
+
+                      TextField(
+                        controller:
+                            _passwordController,
+
+                        obscureText:
+                            _obscurePassword,
+
+                        decoration:
+                            InputDecoration(
+                          labelText:
+                              "Password",
+
+                          prefixIcon:
+                              const Icon(
+                            Icons.lock,
+                          ),
+
+                          suffixIcon:
+                              IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword =
+                                    !_obscurePassword;
+                              });
+                            },
+
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                          ),
+
+                          border:
+                              OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(
+                                    12),
+                          ),
+                        ),
+                      ),
+
+                      if (_errorText
+                          .isNotEmpty)
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(
+                                  top: 10),
+                          child: Text(
+                            _errorText,
+                            style:
+                                const TextStyle(
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(
+                          height: 24),
+
+                      SizedBox(
+                        width:
+                            double.infinity,
+
+                        height: 50,
+
+                        child:
+                            ElevatedButton(
+                          onPressed:
+                              _isLoading
+                                  ? null
+                                  : _signUp,
+
+                          style:
+                              ElevatedButton.styleFrom(
+                            backgroundColor:
+                                Colors.blueGrey,
+
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      12),
+                            ),
+                          ),
+
+                          child:
+                              _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color:
+                                          Colors.white,
+                                    )
+                                  : const Text(
+                                      "Sign Up",
+                                      style:
+                                          TextStyle(
+                                        color:
+                                            Colors
+                                                .white,
+                                        fontSize:
+                                            16,
+                                      ),
+                                    ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                          height: 16),
+
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment
+                                .center,
+
+                        children: [
+                          const Text(
+                            "Sudah punya akun?",
+                          ),
+
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(
+                                  context);
+                            },
+
+                            child:
+                                const Text(
+                              "Sign In",
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  obscureText: _obscurePassword,
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _signUp,
-                  child: const Text('Sign Up'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
