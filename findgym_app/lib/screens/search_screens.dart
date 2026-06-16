@@ -82,8 +82,8 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFF1F2937),
-                  Color(0xFF0F766E),
+                  Color(0xFF7C3AED),
+                  Color(0xFFA78BFA),
                 ],
               ),
             ),
