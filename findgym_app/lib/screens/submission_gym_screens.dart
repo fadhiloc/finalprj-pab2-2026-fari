@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import '../services/notification_service.dart';
+
 
 class SubmissionGymScreen extends StatefulWidget {
   const SubmissionGymScreen({super.key});
@@ -18,6 +20,9 @@ class SubmissionGymScreen extends StatefulWidget {
 
 class _SubmissionGymScreenState
     extends State<SubmissionGymScreen> {
+
+    final NotificationService _notificationService =
+      NotificationService();
 
 
     List<String> selectedImages = [];
@@ -64,6 +69,7 @@ class _SubmissionGymScreenState
     final snapshot =
         await FirebaseFirestore.instance
             .collection('gym_types')
+            .orderBy('name')
             .get();
 
     setState(() {
@@ -241,13 +247,30 @@ class _SubmissionGymScreenState
         'submittedBy':
             user?.uid,
 
+        'ownerId': FirebaseAuth.instance.currentUser!.uid,
+
         'status': 'pending',
 
         'createdAt':
-            Timestamp.now(),
+            FieldValue.serverTimestamp(),
 
 
       });
+      await _notificationService.createNotification(
+        userId: 'phUPkGNvxdhqhLJQg0VayLmS2k63', // UID admin
+        title: 'Pengajuan Gym Baru',
+        body:
+            '${_nameController.text} menunggu approval.',
+        type: 'submit',
+      );
+
+      await _notificationService.createNotification(
+        userId: user!.uid,
+        title: 'Pengajuan Dikirim',
+        body:
+            'Gym Anda sedang menunggu persetujuan admin.',
+        type: 'submit',
+      );
 
       if (!mounted) return;
 
@@ -373,12 +396,17 @@ class _SubmissionGymScreenState
                       type,
                     ),
 
+                    selectedColor: const Color(0xFFD8B4FE),
+
+                    side: BorderSide(
+                      color: Colors.grey.shade300,
+                    ),
+
                     onSelected:
                         (selected) {
                       setState(() {
-                        if (selected) {
-                          selectedTypes
-                              .add(type);
+                        if (selected && !selectedTypes.contains(type)) {
+                          selectedTypes.add(type);
                         } else {
                           selectedTypes
                               .remove(
