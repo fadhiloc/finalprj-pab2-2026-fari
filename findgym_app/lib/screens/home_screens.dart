@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import '../Models/Gym.dart';
 import '../widgets/item_card.dart';
 
@@ -11,6 +10,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() =>
       _HomeScreenState();
+      
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -19,6 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
       TextEditingController();
 
   String searchQuery = '';
+  String selectedType = 'Semua';
+  String sortBy = 'Top Rating';
 
   @override
   void dispose() {
@@ -91,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       appBar: AppBar(
         title: const Text(
-          "Aplikasi Gym Palembang",
+          "FindMyGym",
         ),
         centerTitle: true,
 
@@ -102,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _logout();
               }
             },
+        
             itemBuilder: (context) => [
               PopupMenuItem<String>(
                 enabled: false,
@@ -162,6 +165,131 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          SizedBox(
+            height: 50,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('gym_types')
+                  .orderBy('name')
+                  .snapshots(),
+
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox();
+                }
+
+                final types = [
+                  'Semua',
+                  ...snapshot.data!.docs.map(
+                    (e) => e['name'].toString(),
+                  ),
+                ];
+
+                final isAdmin =
+                    user?.email ==
+                    'admin@gmail.com';
+
+                return ListView(
+                  scrollDirection:
+                      Axis.horizontal,
+
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 16,
+                  ),
+
+                  children: [
+                    ...types.map((type) {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(
+                          right: 8,
+                        ),
+
+                        child: ChoiceChip(
+                          label: Text(type),
+
+                          selected:
+                              selectedType ==
+                                  type,
+
+                          onSelected: (_) {
+                            setState(() {
+                              selectedType =
+                                  type;
+                            });
+                          },
+                        ),
+                      );
+                    }),
+
+                    if (isAdmin)
+                      ActionChip(
+                        avatar: const Icon(
+                          Icons.add,
+                          size: 18,
+                        ),
+
+                        label:
+                            const Text(
+                          'Kategori',
+                        ),
+
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/admincategory',
+                          );
+                        },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+
+            child: DropdownButtonFormField<
+                String>(
+              value: sortBy,
+
+              decoration:
+                  const InputDecoration(
+                labelText: 'Urutkan',
+              ),
+
+              items: const [
+                DropdownMenuItem(
+                  value: 'Top Rating',
+                  child: Text(
+                    'Top Rating',
+                  ),
+                ),
+
+                DropdownMenuItem(
+                  value: 'Nama A-Z',
+                  child: Text(
+                    'Nama A-Z',
+                  ),
+                ),
+              ],
+
+              onChanged: (value) {
+                setState(() {
+                  sortBy = value!;
+                });
+              },
+            ),
+          ),
+
+
           Expanded(
             child:
                 StreamBuilder<
@@ -212,23 +340,41 @@ class _HomeScreenState extends State<HomeScreen> {
                             .map(
                               gymFromDocument,
                             )
-                            .where((
-                              gym,
-                            ) {
-                              return gym
-                                      .name
+                            .where((gym) {
+                              final matchSearch =
+                                  gym.name
                                       .toLowerCase()
-                                      .contains(
-                                        searchQuery,
-                                      ) ||
-                                  gym
-                                      .location
+                                      .contains(searchQuery) ||
+                                  gym.location
                                       .toLowerCase()
-                                      .contains(
-                                        searchQuery,
-                                      );
+                                      .contains(searchQuery);
+
+                              final matchType =
+                                  selectedType == 'Semua' ||
+                                  gym.types.contains(selectedType);
+
+                              return matchSearch && matchType;
                             })
                             .toList();
+
+                    if (sortBy ==
+                        'Top Rating') {
+                      gyms.sort(
+                        (a, b) => b.rating
+                            .compareTo(a.rating),
+                      );
+                    }
+
+                    if (sortBy ==
+                        'Nama A-Z') {
+                      gyms.sort(
+                        (a, b) =>
+                            a.name.compareTo(
+                          b.name,
+                        ),
+                      );
+                    }
+                    
 
                     if (gyms
                         .isEmpty) {
