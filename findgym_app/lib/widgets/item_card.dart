@@ -27,7 +27,7 @@ class ItemCard extends StatelessWidget {
 
     final bool isAdmin =
         user?.email ==
-        'admin@gmail.com'; // GANTI EMAIL ADMIN
+        'admin@gmail.com';
 
     return InkWell(
       borderRadius:
