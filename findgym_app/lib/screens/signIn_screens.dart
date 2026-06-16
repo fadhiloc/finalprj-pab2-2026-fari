@@ -26,9 +26,7 @@ class _SignInScreenState
       TextEditingController();
 
   bool _obscurePassword = true;
-
   bool _isLoading = false;
-
   String _errorText = '';
 
   Future<void> signIn() async {
@@ -68,8 +66,7 @@ class _SignInScreenState
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorText =
-            e.message ??
-            'Login gagal';
+            e.message ?? 'Login gagal';
       });
     } catch (e) {
       setState(() {
@@ -78,9 +75,11 @@ class _SignInScreenState
       });
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -93,128 +92,261 @@ class _SignInScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Sign In',
+      body: Container(
+        width: double.infinity,
+
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF7C3AED),
+              Color(0xFFF5F3FF),
+            ],
+          ),
         ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding:
-                const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextFormField(
-                  controller:
-                      _usernameController,
-                  decoration:
-                      const InputDecoration(
-                    labelText: "Email",
-                    border:
-                        OutlineInputBorder(),
+
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding:
+                  const EdgeInsets.all(24),
+
+              child: Card(
+                elevation: 10,
+
+                shape:
+                    RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    24,
                   ),
                 ),
 
-                const SizedBox(
-                  height: 20,
-                ),
-
-                TextFormField(
-                  controller:
-                      _passwordController,
-                  obscureText:
-                      _obscurePassword,
-                  decoration:
-                      InputDecoration(
-                    labelText:
-                        "Password",
-                    border:
-                        const OutlineInputBorder(),
-                    errorText:
-                        _errorText
-                                .isNotEmpty
-                            ? _errorText
-                            : null,
-                    suffixIcon:
-                        IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword =
-                              !_obscurePassword;
-                        });
-                      },
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons
-                                .visibility_off
-                            : Icons
-                                .visibility,
-                      ),
-                    ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.all(
+                    24,
                   ),
-                ),
 
-                const SizedBox(
-                  height: 20,
-                ),
+                  child: Column(
+                    mainAxisSize:
+                        MainAxisSize.min,
 
-                SizedBox(
-                  width:
-                      double.infinity,
-                  child:
-                      ElevatedButton(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : signIn,
-                    child: _isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text(
-                            'Sign In',
-                          ),
-                  ),
-                ),
-
-                const SizedBox(
-                  height: 12,
-                ),
-
-                RichText(
-                  text: TextSpan(
-                    text:
-                        'Belum punya akun? ',
-                    style:
-                        const TextStyle(
-                      color:
-                          Colors.black87,
-                      fontSize: 16,
-                    ),
                     children: [
-                      TextSpan(
-                        text:
-                            'Daftar di sini',
-                        style:
-                            const TextStyle(
-                          color:
-                              Colors.blue,
-                          decoration:
-                              TextDecoration
-                                  .underline,
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor:
+                            Color(
+                          0xFF7C3AED,
                         ),
-                        recognizer:
-                            TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/signup',
-                                );
-                              },
+
+                        child: Icon(
+                          Icons
+                              .fitness_center,
+                          size: 40,
+                          color:
+                              Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 16,
+                      ),
+
+                      const Text(
+                        'FindMyGym',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight:
+                              FontWeight.bold,
+                          color: Color(
+                            0xFF7C3AED,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 8,
+                      ),
+
+                      const Text(
+                        'Temukan gym terbaik di kota Anda',
+                        textAlign:
+                            TextAlign.center,
+                        style: TextStyle(
+                          color:
+                              Colors.grey,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 30,
+                      ),
+
+                      TextFormField(
+                        controller:
+                            _usernameController,
+
+                        decoration:
+                            const InputDecoration(
+                          labelText:
+                              'Email',
+                          prefixIcon:
+                              Icon(
+                            Icons.email,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      TextFormField(
+                        controller:
+                            _passwordController,
+
+                        obscureText:
+                            _obscurePassword,
+
+                        decoration:
+                            InputDecoration(
+                          labelText:
+                              'Password',
+
+                          prefixIcon:
+                              const Icon(
+                            Icons.lock,
+                          ),
+
+                          errorText:
+                              _errorText
+                                      .isNotEmpty
+                                  ? _errorText
+                                  : null,
+
+                          suffixIcon:
+                              IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword =
+                                    !_obscurePassword;
+                              });
+                            },
+
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons
+                                      .visibility_off
+                                  : Icons
+                                      .visibility,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 24,
+                      ),
+
+                      SizedBox(
+                        width:
+                            double.infinity,
+                        height: 50,
+
+                        child:
+                            ElevatedButton(
+                          style:
+                              ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color(
+                              0xFF7C3AED,
+                            ),
+
+                            shape:
+                                RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(
+                                15,
+                              ),
+                            ),
+                          ),
+
+                          onPressed:
+                              _isLoading
+                                  ? null
+                                  : signIn,
+
+                          child:
+                              _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color:
+                                          Colors.white,
+                                    )
+                                  : const Text(
+                                      'Sign In',
+                                      style:
+                                          TextStyle(
+                                        color:
+                                            Colors.white,
+                                        fontSize:
+                                            16,
+                                      ),
+                                    ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      RichText(
+                        text: TextSpan(
+                          text:
+                              'Belum punya akun? ',
+
+                          style:
+                              const TextStyle(
+                            color:
+                                Colors.black87,
+                            fontSize: 15,
+                          ),
+
+                          children: [
+                            TextSpan(
+                              text:
+                                  'Daftar di sini',
+
+                              style:
+                                  const TextStyle(
+                                color:
+                                    Color(
+                                  0xFF7C3AED,
+                                ),
+
+                                fontWeight:
+                                    FontWeight
+                                        .bold,
+                              ),
+
+                              recognizer:
+                                  TapGestureRecognizer()
+                                    ..onTap =
+                                        () {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/signup',
+                                      );
+                                    },
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
