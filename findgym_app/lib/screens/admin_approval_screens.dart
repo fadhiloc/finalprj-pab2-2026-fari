@@ -1,25 +1,65 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
 
 class AdminApprovalScreen extends StatelessWidget {
-  const AdminApprovalScreen({super.key});
+  AdminApprovalScreen({super.key});
+
+  final NotificationService _notificationService =
+      NotificationService();
 
   Future<void> approveGym(String id) async {
+    final gymDoc = await FirebaseFirestore.instance
+        .collection('gyms')
+        .doc(id)
+        .get();
+
+    final data =
+        gymDoc.data() as Map<String, dynamic>;
+
+    final ownerId = data['ownerId'];
+    final gymName = data['name'];
+
     await FirebaseFirestore.instance
         .collection('gyms')
         .doc(id)
         .update({
       'status': 'approved',
     });
+
+    await _notificationService.createNotification(
+      userId: ownerId,
+      title: 'Gym Disetujui',
+      body: '$gymName telah disetujui admin.',
+      type: 'approved',
+    );
   }
 
   Future<void> rejectGym(String id) async {
+    final gymDoc = await FirebaseFirestore.instance
+        .collection('gyms')
+        .doc(id)
+        .get();
+
+    final data =
+        gymDoc.data() as Map<String, dynamic>;
+
+    final ownerId = data['ownerId'];
+    final gymName = data['name'];
+
     await FirebaseFirestore.instance
         .collection('gyms')
         .doc(id)
         .update({
       'status': 'rejected',
     });
+
+    await _notificationService.createNotification(
+      userId: ownerId,
+      title: 'Gym Ditolak',
+      body: '$gymName ditolak admin.',
+      type: 'rejected',
+    );
   }
 
   @override

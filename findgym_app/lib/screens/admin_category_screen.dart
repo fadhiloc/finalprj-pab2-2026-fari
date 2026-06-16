@@ -30,13 +30,51 @@ class _AdminCategoryScreenState
 
     if (name.isEmpty) return;
 
+    final existing =
+        await _firestore
+            .collection('gym_types')
+            .where(
+              'name',
+              isEqualTo: name,
+            )
+            .get();
+
+    if (existing.docs.isNotEmpty) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Kategori sudah ada',
+          ),
+        ),
+      );
+
+      return;
+    }
+
     await _firestore
         .collection('gym_types')
         .add({
       'name': name,
+      'createdAt' : FieldValue.serverTimestamp(),
     });
 
     _controller.clear();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Kategori berhasil ditambahkan',
+        ),
+      ),
+    );
   }
 
   Future<void> deleteCategory(
@@ -127,8 +165,12 @@ class _AdminCategoryScreenState
   ) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            const Color(0xFF7C3AED),
+        foregroundColor:
+            Colors.white,
         title: const Text(
-          "Kelola Kategori Gym",
+          "Tipe Gym",
         ),
       ),
 
@@ -183,6 +225,7 @@ class _AdminCategoryScreenState
                         .collection(
                           'gym_types',
                         )
+                        .orderBy('name')
                         .snapshots(),
 
                 builder: (
@@ -230,11 +273,29 @@ class _AdminCategoryScreenState
                               >;
 
                       return Card(
+                        elevation: 3,
+                        shape:
+                            RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(16),
+                        ),
+
                         child:
                             ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                const Color(0xFFEDE9FE),
+                            child: const Icon(
+                              Icons.fitness_center,
+                              color: Color(0xFF7C3AED),
+                            ),
+                          ),
+
                           title: Text(
-                            data['name'] ??
-                                '',
+                            data['name'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
 
                           trailing:
@@ -249,8 +310,7 @@ class _AdminCategoryScreenState
                                     const Icon(
                                   Icons
                                       .edit,
-                                  color:
-                                      Colors.orange,
+                                  color: const Color(0xFF7C3AED)
                                 ),
 
                                 onPressed:
@@ -271,11 +331,51 @@ class _AdminCategoryScreenState
                                       Colors.red,
                                 ),
 
-                                onPressed:
-                                    () {
-                                  deleteCategory(
-                                    doc.id,
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text(
+                                        'Hapus Kategori',
+                                      ),
+                                      content: Text(
+                                        'Yakin ingin menghapus kategori ${data['name']}?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                context,
+                                                false,
+                                              ),
+                                          child: const Text(
+                                            'Batal',
+                                          ),
+                                        ),
+
+                                        ElevatedButton(
+                                          style:
+                                              ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                Colors.red,
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                context,
+                                                true,
+                                              ),
+                                          child: const Text(
+                                            'Hapus',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
+
+                                  if (confirm == true) {
+                                    deleteCategory(doc.id);
+                                  }
+
                                 },
                               ),
                             ],
