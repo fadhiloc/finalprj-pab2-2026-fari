@@ -1,11 +1,13 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:aplikasi_gym_palembang/Models/Gym.dart';
 import '../services/review_service.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../services/favorite_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:url_launcher/url_launcher.dart'; //revisi
+import 'package:share_plus/share_plus.dart';
 
 class DetailScreen extends StatefulWidget {
   final Gym gym;
@@ -186,6 +188,28 @@ class DetailScreen extends StatefulWidget {
       _reviewController.dispose();
       super.dispose();
     }
+    // rev direct call
+    Future<void> _callGym() async {
+      final Uri uri = Uri(
+        scheme: 'tel',
+        path: widget.gym.contact,
+      );
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    }
+
+    void _shareGym() {
+      Share.share(
+        '🏋️ ${widget.gym.name}\n'
+        '📍 ${widget.gym.location}\n'
+        'Kategori: ${widget.gym.types.join(", ")}\n'
+        'Temukan gym ini di aplikasi FindMyGym!',
+      );
+    }
+
+
 
   Widget _buildRatingChip() {
     if (widget.gym.rating <= 0 || widget.gym.ratingCount <= 0) {
@@ -445,6 +469,45 @@ class DetailScreen extends StatefulWidget {
                   const SizedBox(height: 20),
 
                   _buildInfoCard(),
+
+                  const SizedBox(height: 24),
+
+//rev
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
+                          ),
+                          onPressed: _callGym,
+                          icon: const Icon(Icons.call),
+                          label: const Text('Hubungi'),
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7C3AED),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
+                          ),
+                          onPressed: _shareGym,
+                          icon: const Icon(Icons.share),
+                          label: const Text('Bagikan'),
+                        ),
+                      ),
+                    ],
+                  ),
 
                   const SizedBox(height: 24),
 
