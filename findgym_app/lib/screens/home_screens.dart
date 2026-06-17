@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../Models/Gym.dart';
 import '../widgets/item_card.dart';
+import '../widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -98,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
 
         actions: [
+          const NotificationBell(),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'logout') {
@@ -165,8 +167,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          SizedBox(
-            height: 50,
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('gym_types')
@@ -189,39 +194,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     user?.email ==
                     'admin@gmail.com';
 
-                return ListView(
-                  scrollDirection:
-                      Axis.horizontal,
-
-                  padding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 16,
-                  ),
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
 
                   children: [
                     ...types.map((type) {
-                      return Padding(
-                        padding:
-                            const EdgeInsets.only(
-                          right: 8,
-                        ),
+                      return ChoiceChip(
+                        label: Text(type),
 
-                        child: ChoiceChip(
-                          label: Text(type),
+                        selected:
+                            selectedType == type,
 
-                          selected:
-                              selectedType ==
-                                  type,
-
-                          onSelected: (_) {
-                            setState(() {
-                              selectedType =
-                                  type;
-                            });
-                          },
-                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            selectedType = type;
+                          });
+                        },
                       );
-                    }),
+                    }).toList(),
 
                     if (isAdmin)
                       ActionChip(
@@ -230,8 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 18,
                         ),
 
-                        label:
-                            const Text(
+                        label: const Text(
                           'Kategori',
                         ),
 
